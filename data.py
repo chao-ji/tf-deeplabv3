@@ -1,4 +1,5 @@
-"""Data module."""
+"""The data module for reading, preprocessing and batching labels and images 
+to be fed to model builders."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,12 +11,13 @@ import tensorflow as tf
 B_MEAN, G_MEAN, R_MEAN = 104.00698793, 116.66876762, 122.67891434
 VOID_LABEL = 255
 AUGTRAIN_SIZE = 10582
+VAL_SIZE = 1449
 TRAIN_MODE = tf.contrib.learn.ModeKeys.TRAIN
 INFER_MODE = tf.contrib.learn.ModeKeys.INFER
 
 
 class PascalVOCDataset(object):
-  """"""
+  """Pascal VOC Dataset."""
   def __init__(self, hparams, mode, scope=None):
     self._mode = mode
     self._batch_size = hparams.batch_size if mode == TRAIN_MODE else 1
@@ -23,9 +25,8 @@ class PascalVOCDataset(object):
     with tf.variable_scope(scope, "data"):
       if mode != INFER_MODE:
         self._labels, self._images = self._build_dataset(hparams)
-#    else:
-#      (self._initializer, self._labels, self._mask, self._num_valid_pixels,
-#          self._images) = self._get_infer_iterator(hparams)
+      else:
+        pass
 
   @property
   def mode(self):
@@ -40,36 +41,34 @@ class PascalVOCDataset(object):
     return self._images
 
   def _build_dataset(self, hparams):
-    """Builds the dataset pipeline for training or evaluation."""
+    """Builds the data transforming pipeline for training or evaluation."""
     labels_dir = hparams.labels_dir
     images_dir = hparams.images_dir
     image_sets_dir = hparams.image_sets_dir
-    random_seed = hparams.random_seed
     batch_size = self._batch_size
 
     if self.mode == TRAIN_MODE:
-      fid = os.path.join(image_sets_dir, "augtrain.txt") 
+      fn = os.path.join(image_sets_dir, "augtrain.txt") 
     else:
-      fid = os.path.join(image_sets_dir, "val.txt")
+      fn = os.path.join(image_sets_dir, "val.txt")
 
-    label_fns = [os.path.join(labels_dir, (l.strip() + ".png"))
-        for l in tf.gfile.GFile(fid).readlines()]
-    image_fns = [os.path.join(images_dir, (l.strip() + ".jpg"))
-        for l in tf.gfile.GFile(fid).readlines()]
+    label_fns = [os.path.join(labels_dir, l.strip() + ".png")
+        for l in tf.gfile.GFile(fn).readlines()]
+    image_fns = [os.path.join(images_dir, l.strip() + ".jpg")
+        for l in tf.gfile.GFile(fn).readlines()]
 
     dataset = tf.data.Dataset.zip((
         tf.data.Dataset.from_tensor_slices(tf.convert_to_tensor(label_fns)),
         tf.data.Dataset.from_tensor_slices(tf.convert_to_tensor(image_fns))))
 
+    dataset = dataset.repeat()
+
     if self.mode == TRAIN_MODE:
-      dataset = dataset.repeat().shuffle(AUGTRAIN_SIZE, random_seed)
+      dataset = dataset.shuffle(AUGTRAIN_SIZE, hparams.random_seed)
 
     dataset = dataset.map(lambda fn_lbl, fn_img: 
-        (tf.read_file(fn_lbl), tf.read_file(fn_img)))
-
-    dataset = dataset.map(lambda str_lbl, str_img:
-        (tf.image.decode_png(str_lbl, channels=1),
-        tf.image.decode_jpeg(str_img, channels=3)))
+        (tf.image.decode_png(tf.read_file(fn_lbl), channels=1),
+        tf.image.decode_jpeg(tf.read_file(fn_img), channels=3)))
 
     if self.mode == TRAIN_MODE:
       dataset = dataset.map(
@@ -79,20 +78,6 @@ class PascalVOCDataset(object):
 
     dataset = dataset.map(lambda lbl, img:
         (tf.squeeze(tf.cast(lbl, tf.int32), axis=2), img))
-
-#    def get_masks(lbl):
-#      return tf.where(tf.equal(lbl, VOID_LABEL),
-#          tf.zeros_like(lbl, dtype=tf.float32),
-#          tf.ones_like(lbl, dtype=tf.float32))
-
-#    def zero_out_void(lbl):
-#      return tf.where(tf.equal(lbl, VOID_LABEL),
-#        tf.zeros_like(lbl, dtype=tf.int32), lbl)
-
-#    dataset = dataset.map(
-#        lambda lbl, img: (lbl, img, get_masks(lbl))).map(
-#        lambda lbl, img, mask: (zero_out_void(lbl), img, mask)).map(
-#        lambda lbl, img, mask: (lbl, img, mask, tf.reduce_sum(mask)))
 
     dataset = dataset.batch(batch_size).prefetch(buffer_size=batch_size * 2)
 
@@ -140,10 +125,9 @@ def _random_crop_and_flip(label, image, crop_image_size, seed=None):
   """
   crop_height, crop_width = crop_image_size
 
-  # Subtracting `VOID_LABEL` first and adding it back is a trick to effectively
-  # pad `VOID_LABEL` values instead of the default padding value 
-  # (i.e. zeros) of `tf.image.pad_to_bounding_box`
-  label = label - VOID_LABEL
+  # Subtracting `VOID_LABEL` first and adding it back is a trick to set 
+  # `VOID_LABEL` as the effective padding value instead of zero.
+  label -= VOID_LABEL
 
   shape = tf.shape(label)
   height, width = shape[0], shape[1]
@@ -166,6 +150,7 @@ def _random_crop_and_flip(label, image, crop_image_size, seed=None):
 
 
 def _subtract_channel_means(image):
+  """Subtract color channel means."""
   image.set_shape([None, None, 3])
   if image.dtype != tf.float32:
     image = tf.cast(image, tf.float32)
