@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-RGB_MEAN = 123.15, 115.90, 103.06
+RGB_MEAN = 122.67891434, 116.66876762, 104.00698793 
 
 
 class BaseTrainerEvaluatorDataset(object):
@@ -10,7 +10,15 @@ class BaseTrainerEvaluatorDataset(object):
   buffer string (scalar tensor) into images and labels.
   """
   def _decode_raw_protobuf_string(self, protobuf_string):
-    """Decodes raw proto buffer string scalar tensor into a tensor dict."""
+    """Decodes raw proto buffer string scalar tensor into a tensor dict.
+
+    Args:
+      protobuf_string: string scalar tensor, protobuf string for one example.
+
+    Returns:
+      tensor_dict: dict mapping from tensor name to tensors (3-D float tensors
+        of shape [height, width, channels]).
+    """
     keys_to_features = _get_keys_to_features()
     tensor_dict = tf.parse_single_example(protobuf_string, keys_to_features)
     return {'images': tf.image.decode_jpeg(tensor_dict['image'], channels=3),
@@ -43,8 +51,8 @@ class TrainerDeepLabV3Dataset(BaseTrainerEvaluatorDataset):
         `tf.random_uniform([], min_rescale_factor, max_rescale_factor)`.
       crop_height: int scalar, height of cropped image.
       crop_width: int scalar, width of cropped image.
-      ignore_label: int scalar, index of the class in the `labels` tensor that
-        are ignored (i.e. masked out when computing loss).
+      ignore_label: int scalar, integer representing the class in `labels` to 
+        be ignored (i.e. masked out when computing loss).
       shuffle_buffer_size: int scalar, shuffle buffer size.
     """
     self._batch_size = batch_size
@@ -69,8 +77,8 @@ class TrainerDeepLabV3Dataset(BaseTrainerEvaluatorDataset):
 
     Returns:
       tensor_dict: a dict mapping from tensor names to tensors:
-        { 'images': [batch_size, height, width, channels=3]
-          'labels': [batch_size, height, width, channels=1] }
+        { 'images': [batch_size, height, width, channels=3], tf.float32
+          'labels': [batch_size, height, width], tf.int32 }
     """
     dataset = tf.data.TFRecordDataset(filenames)
     dataset = dataset.repeat().shuffle(self._shuffle_buffer_size)
@@ -123,9 +131,9 @@ class TrainerDeepLabV3Dataset(BaseTrainerEvaluatorDataset):
     new_size = tf.to_int32(tf.to_float(tf.shape(labels)[:2]) * scale)
 
     images = tf.image.resize_images(images, new_size, 
-        method=tf.image.ResizeMethod.BILINEAR, align_corners=True)
+        method=tf.image.ResizeMethod.BILINEAR)
     labels = tf.image.resize_images(labels, new_size, 
-        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR, align_corners=True)
+        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     return images, labels
 
   def _pad_randomcrop_randomflip(self, images, labels):
@@ -144,6 +152,7 @@ class TrainerDeepLabV3Dataset(BaseTrainerEvaluatorDataset):
     image_pad_value = self._get_pad_value()
     images -= image_pad_value
     labels -= self._ignore_label
+    # `images`, `labels` are lumped so they can be cropped and flipped together.
     images_labels = tf.concat([images, labels], axis=2)
 
     images_labels = tf.image.pad_to_bounding_box(
@@ -161,7 +170,7 @@ class TrainerDeepLabV3Dataset(BaseTrainerEvaluatorDataset):
     return images, labels
 
   def _get_pad_value(self):
-    """Returns the pixel (1-D tensor holding R,G,B values) to pad images."""
+    """Returns the pixel value (tensor holding R,G,B values) to pad images."""
     return tf.reshape(tf.convert_to_tensor(RGB_MEAN if self._pad_imagenet_mean 
         else (127.5, 127.5, 127.5)), [1, 1, 3])
 
@@ -181,18 +190,21 @@ class EvaluatorDeepLabV3Dataset(BaseTrainerEvaluatorDataset):
 
     Returns:
       tensor_dict: a dict mapping from tensor names to tensors:
-        { 'images': [1, height, width, channels=3]
-          'labels': [1, height, width, channels=1] }
+        { 'images': [1, height, width, channels=3], tf.float32
+          'labels': [1, height, width], tf.int32 }
     """
     dataset = tf.data.TFRecordDataset(filenames)
 
     dataset = dataset.map(lambda protobuf_string:
         self._decode_raw_protobuf_string(protobuf_string))
 
+    dataset = dataset.map(lambda tensor_dict: {
+        'images': tf.to_float(tensor_dict['images']), 
+        'labels': tf.squeeze(tf.to_int32(tensor_dict['labels']), axis=2)})
     dataset = dataset.batch(1)
     tensor_dict = dataset.make_one_shot_iterator().get_next()
     tensor_dict['images'].set_shape([1, None, None, 3])
-    tensor_dict['labels'].set_shape([1, None, None, 1])
+    tensor_dict['labels'].set_shape([1, None, None])
     return tensor_dict
     
 
@@ -211,8 +223,7 @@ class InferencerDeepLabV3Dataset(object):
 
     Returns:
       tensor_dict: a dict mapping from tensor names to tensors:
-        { 'images': [1, height, width, channels=3]
-          'labels': [1, height, width, channels=1] }
+        { 'images': [1, height, width, channels=3], tf.float32 }
     """
     dataset = tf.data.Dataset.from_tensor_slices(filenames)
 
@@ -226,6 +237,9 @@ class InferencerDeepLabV3Dataset(object):
 
 
 def _get_keys_to_features():
+  """Returns a dict mapping from field name of a protobuf example to the 
+  corresponding parser.
+  """
   keys_to_features = {
       'image': tf.FixedLenFeature((), tf.string, default_value=''),
       'label': tf.FixedLenFeature((), tf.string, default_value='')}
