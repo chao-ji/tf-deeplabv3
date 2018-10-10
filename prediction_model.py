@@ -1,15 +1,10 @@
-""""""
 import tensorflow as tf
-
-from nets.resnet_v1 import resnet_v1_50
-from nets.resnet_v1 import resnet_v1_101
-from nets.resnet_v2 import resnet_v2_50
-from nets.resnet_v2 import resnet_v2_101
 
 from dataset import RGB_MEAN
 import utils
 
 slim = tf.contrib.slim
+
 
 class DeepLabV3PredictionModel(object):
   """DeepLabV3 prediction model.
@@ -33,8 +28,8 @@ class DeepLabV3PredictionModel(object):
     """Constructor.
 
     Args:
-      feature_extractor: the backbone model (callable) that takes `images`  
-        tensor and returns a tuple: `features` and `end_points`.
+      feature_extractor: the backbone model (callable) that takes as input 
+        `images` tensor and returns a tuple: `features` and `end_points`.
       feature_extractor_name: string scalar, name of `feature_extractor`.
       num_classes: int scalar, num of classes (including background class).
       is_training: bool scalar, whether model is in training mode (for 

@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from tensorflow import logging
 
 from nets.resnet_v1 import resnet_v1_50
@@ -248,6 +249,7 @@ def add_loss(labels, logits, ignore_label):
     labels: int tensor of shape [batch_size, crop_height, crop_width]
     logits: float tensor of shape 
         [batch_size, crop_height, crop_width, num_classes]
+    ignore_label: int scalar, the class label to be ignored in `labels`. 
   """
   masks = tf.to_float(tf.not_equal(labels, ignore_label))
   labels = tf.to_int32(tf.to_float(labels) * masks)
@@ -351,3 +353,53 @@ def create_persist_saver(max_to_keep=None):
   persist_saver = tf.train.Saver(max_to_keep=max_to_keep)
   return persist_saver
 
+
+def visualize_predictions(predictions):
+  """Convert predictions holding class labels into displayable 3-channel
+  images.
+
+  Args:
+    predictions: 3-D numpy array of shape [batch_size, height, width] holding
+      predicted class labels for each spatial location.
+
+  Returns:
+    predictions_image: 4-D numpy array of shape [batch_size, height, width, 3]
+      where each class label prediction is mapped to RGB values.
+  """
+  color_map = get_color_map()
+  predictions_image = np.array([color_map[i] for i in predictions.ravel()])
+  predictions_image = predictions_image.reshape(predictions.shape + (3,))
+  return predictions_image
+
+
+def get_color_map(num_colors=256, normalized=False):
+  """Creates color map.
+
+  Args:
+    num_colors: int scalar, total num of colors.
+    normalized: bool scalar, whether RGB channel values are in the range of 
+      [0, 1] float (True) or [0, 255] uint8 (False).
+    
+  Returns:
+    color_map: numpy array of shape [num_colors, 3].
+  """
+  def bitget(byteval, idx):
+    return ((byteval & (1 << idx)) != 0)
+
+  dtype = 'float32' if normalized else 'uint8'
+  color_map = np.zeros((num_colors, 3), dtype=dtype)
+
+  for i in range(num_colors):
+    r = g = b = 0
+    c = i
+    for j in range(8):
+      r = r | (bitget(c, 0) << 7 - j)
+      g = g | (bitget(c, 1) << 7 - j)
+      b = b | (bitget(c, 2) << 7 - j)
+      c = c >> 3
+
+    color_map[i] = np.array([r, g, b])
+
+  color_map = color_map/255 if normalized else color_map
+  return color_map
+ 

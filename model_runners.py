@@ -49,13 +49,14 @@ class DeepLabV3Trainer(BaseModelRunner):
   def mode(self):
     return tf.contrib.learn.ModeKeys.TRAIN
 
-  def train(self, filenames, dataset, optimizer):
+  def train(self, filenames, dataset, optimizer, learning_rate):
     """Adds training related ops to the graph.
 
     Args:
       filenames: list of strings, the list of TFRecord filenames.
       dataset: a TrainerDeepLabV3Dataset instance.
       optimizer: an Optimizer instance.
+      learning_rate: float tensor scalar, learning rate.
 
     Returns:
       to_be_run_dict: a dict mapping from names to tensors/ops 
@@ -95,9 +96,14 @@ class DeepLabV3Trainer(BaseModelRunner):
     with tf.control_dependencies([grouped_update_op]):
       total_loss = tf.identity(total_loss, name='total_loss')
 
+    summary_op = tf.summary.merge([
+        tf.summary.scalar('total_loss', total_loss),
+        tf.summary.scalar('learning_rate', learning_rate)])
+
     to_be_run_dict = {'grouped_update_op': grouped_update_op, 
                       'total_loss': total_loss, 
-                      'global_step': global_step}
+                      'global_step': global_step,
+                      'summary_op': summary_op}
     return to_be_run_dict
 
 
@@ -178,14 +184,16 @@ class DeepLabV3Inferencer(BaseModelRunner):
     Returns:
       to_be_run_dict: a dict mapping from names to tensors
         {'predictions': predicted labels, int tensor of shape 
-            [batch_size, height, width]}
+            [batch_size, height, width],
+         'filename': filename of input image, string scalar}
     """
     self.check_dataset_mode(dataset)
 
     tensor_dict = dataset.get_tensor_dict(filenames)
     logits = self._prediction_model.predict(tensor_dict['images'])
-    predictions = tf.cast(tf.argmax(logits, axis=3, output_type=tf.int32), tf.uint8)
-
-    to_be_run_dict = {'predictions': predictions}
+    predictions = tf.cast(
+        tf.argmax(logits, axis=3, output_type=tf.int32), tf.uint8)
+    to_be_run_dict = {'predictions': predictions, 
+                      'filename': tensor_dict['filename']}
     return to_be_run_dict
 

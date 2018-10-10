@@ -223,16 +223,18 @@ class InferencerDeepLabV3Dataset(object):
 
     Returns:
       tensor_dict: a dict mapping from tensor names to tensors:
-        { 'images': [1, height, width, channels=3], tf.float32 }
+        { 'images': [1, height, width, channels=3], tf.float32,
+          'filename': filename of input image, string scalar}
     """
     dataset = tf.data.Dataset.from_tensor_slices(filenames)
 
-    dataset = dataset.map(lambda filename: 
-        tf.to_float(tf.image.decode_jpeg(tf.read_file(filename), channels=3)))
+    dataset = dataset.map(lambda filename: (
+        tf.to_float(tf.image.decode_jpeg(tf.read_file(filename), channels=3)), 
+        filename))
 
-    dataset = dataset.batch(1)
-    tensor_dict = {'images': dataset.make_one_shot_iterator().get_next()}
-    tensor_dict['images'].set_shape([1, None, None, 3])
+    images, filename = dataset.make_one_shot_iterator().get_next()
+    images.set_shape([None, None, 3])
+    tensor_dict = {'images': tf.expand_dims(images, 0), 'filename': filename}
     return tensor_dict
 
 
