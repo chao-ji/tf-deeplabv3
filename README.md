@@ -69,7 +69,6 @@ To make **inferences**, run
 The input images to inferencer can be raw jpg images (instead of TFRecord files). They must be listed in `/PATH/TO/TEXT_FILE.txt` (i.e. one file name per line). The output image files (with semantic predictions) will be saved to directory specified by `--output_path` (Default is `/tmp/deeplabv3/pred`).
 
 
-
 ### Remarks on memory footprint
 DeepLabv3 has a very large memory footprint at the time of training, mainly because a large (>= 12) batch size is needed to effectively train the batch normalization weights. However there are a number of options, at the cost of accuracy, to reduce memory consumption at training time so that your model fits in the GPU memory.
 * Reduce the crop size of images. Default crop size is 513. You may consider values such as 481, 385.
@@ -78,6 +77,8 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 * Disable the atrous convolution in atrous spatial pyramid pooling module by setting `--atrous_rates=None`.
 
 ### Experiments
+
+#####Sample input and output of Pascal VOC 2012 val
 <p align="center"><img src="files/images/2007_000129.jpg.png" width="200"> <img src="files/images/2007_000129.png" width="200"> <img src="files/images/2007_000129.jpg" width="200"></p>
 <p align="center"><img src="files/images/2007_001299.jpg.png" width="200"> <img src="files/images/2007_001299.png" width="200"> <img src="files/images/2007_001299.jpg" width="200"></p>
 <p align="center"><img src="files/images/2007_005173.jpg.png" width="200"> <img src="files/images/2007_005173.png" width="200"> <img src="files/images/2007_005173.jpg" width="200"></p>
@@ -88,3 +89,6 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 <p align="center"><img src="files/images/2011_002713.jpg.png" width="200"> <img src="files/images/2011_002713.png" width="200"> <img src="files/images/2011_002713.jpg" width="200"></p>
 
 ### References
+* DeepLabv3: Rethinking Atrous Convolution for Semantic Image Segmentation, Chen *et al.*, arXiv: 1706.05587, 2017
+* DeepLabv3+: Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation, Checn *et al.*, arXiv: 1802.02611, 2018
+* DeepLabv3 official tensorflow implementation: https://github.com/tensorflow/models/tree/master/research/deeplab
