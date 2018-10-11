@@ -75,6 +75,7 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 * Use smaller backbone feature extractor (mobilenet-v2 uses much less memory).
 * Disable the decoder module. The decoder module can be disable by setting `--use_decoder=False`.
 * Disable the atrous convolution in atrous spatial pyramid pooling module by setting `--atrous_rates=None`.
+* Use larger output stride. Output stride determines the degree to which the spatial resolution of the original image is reduced by the feature extractor. Default output stride is 16 (with corresponding atrous_rates `[6, 12, 18]`). If that value does not work, consider setting the output stride to 32 (with corresponding atrous_rates `[3, 6, 9]`). 
 
 ### Experiments
 
