@@ -85,15 +85,24 @@ def main(_):
                                     crop_height=FLAGS.crop_size_height, 
                                     crop_width=FLAGS.crop_size_width, 
                                     ignore_label=FLAGS.ignore_label)
+  if 'resnet' in FLAGS.model_variant:
+    feature_extractor_fn = utils.build_resnet(
+        model_variant=FLAGS.model_variant,
+        weight_decay=FLAGS.weight_decay,
+        is_training=True,
+        fine_tune_batch_norm=FLAGS.fine_tune_batch_norm,
+        output_stride=int(FLAGS.output_stride))
+  elif 'mobilenet' in FLAGS.model_variant:
+    feature_extractor_fn = utils.build_mobilenetv2(
+        depth_multiplier=1,
+        weight_decay=FLAGS.weight_decay,
+        is_training=True,
+        fine_tune_batch_norm=FLAGS.fine_tune_batch_norm,
+        output_stride=int(FLAGS.output_stride))
+  else:
+    raise ValueError('Unsupported feature extractor %s' % FLAGS.model_variant)
 
-  resnet_fn = utils.build_resnet(
-      model_variant=FLAGS.model_variant,
-      weight_decay=FLAGS.weight_decay,
-      is_training=True,
-      fine_tune_batch_norm=FLAGS.fine_tune_batch_norm,
-      output_stride=int(FLAGS.output_stride))
-
-  model = DeepLabV3PredictionModel(resnet_fn, 
+  model = DeepLabV3PredictionModel(feature_extractor_fn, 
       FLAGS.model_variant, 
       FLAGS.num_classes,
       is_training=True,

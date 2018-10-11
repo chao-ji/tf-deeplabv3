@@ -55,13 +55,24 @@ FLAGS = flags.FLAGS
 def main(_):
   dataset = EvaluatorDeepLabV3Dataset()
 
-  resnet_fn = utils.build_resnet(model_variant=FLAGS.model_variant,
-                                 weight_decay=FLAGS.weight_decay,
-                                 is_training=False,
-                                 fine_tune_batch_norm=False,
-                                 output_stride=int(FLAGS.output_stride))
+  if 'resnet' in FLAGS.model_variant:
+    feature_extractor_fn = utils.build_resnet(
+        model_variant=FLAGS.model_variant,
+        weight_decay=FLAGS.weight_decay,
+        is_training=False,
+        fine_tune_batch_norm=False,
+        output_stride=int(FLAGS.output_stride))
+  elif 'mobilenet' in FLAGS.model_variant:
+    feature_extractor_fn = utils.build_mobilenetv2(
+        depth_multiplier=1,
+        weight_decay=FLAGS.weight_decay,
+        is_training=False,
+        fine_tune_batch_norm=False,
+        output_stride=int(FLAGS.output_stride))
+  else:
+    raise ValueError('Unsupported feature extractor %s' % FLAGS.model_variant)
 
-  model = DeepLabV3PredictionModel(resnet_fn, 
+  model = DeepLabV3PredictionModel(feature_extractor_fn, 
       FLAGS.model_variant, 
       FLAGS.num_classes,
       is_training=False,
