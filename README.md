@@ -71,15 +71,27 @@ The input images to inferencer can be raw jpg images (instead of TFRecord files)
 
 ### Remarks on memory footprint
 DeepLabv3 has a very large memory footprint at the time of training, mainly because a large (>= 12) batch size is needed to effectively train the batch normalization weights. However there are a number of options, at the cost of accuracy, to reduce memory consumption at training time so that your model fits in the GPU memory.
-* Reduce the crop size of images. Default crop size is 513. You may consider values such as 481, 385.
+* Reduce the crop size of images. Default crop size is 513. Although any positive integers would work, it is recommended to use values `n` such that `n = output_stride * m + 1` (`m` is positive integer). For example, 481, 449 for `output_stride = 16`.
 * Use smaller backbone feature extractor (mobilenet-v2 uses much less memory).
 * Disable the decoder module. The decoder module can be disable by setting `--use_decoder=False`.
-* Disable the atrous convolution in atrous spatial pyramid pooling module by setting `--atrous_rates=None`.
+* Disable the atrous convolution in atrous spatial pyramid pooling module by leaving out the `--atrous_rates` flag.
 * Use larger output stride. Output stride determines the degree to which the spatial resolution of the original image is reduced by the feature extractor. Default output stride is 16 (with corresponding atrous_rates `[6, 12, 18]`). If that value does not work, consider setting the output stride to 32 (with corresponding atrous_rates `[3, 6, 9]`). 
 
 ### Experiments
 
-#####Sample input and output of Pascal VOC 2012 val
+##### Semantic Segmentation on PASCAL VOC 2012
+The DeepLabv3 model was trained on the [augmented training set](http://home.bharathh.info/pubs/codes/SBD/download.html) (1464 + 9118), and evaluated on the val split of VOC 2012 (1449) in terms of mean IOU:
+
+|feature extractor|output stride|atrou rates in ASPP|decoder module|mIOU|
+|-|-|-|-|-|
+|resnet_v2_101|16|6, 12, 18|None|0.7539|
+|mobilenet_v2|16|None|None|0.7099|
+
+Note:
+* The reuslts are single-scale, without using multi-grid (See DeepLabv3 paper) and postprocessing.
+* ResNet v2 101: Because of memory constraint, a low training batch size (11) was used. You may get better results if you can afford to use a larger batch size on your device.
+
+**Sample input and output of Pascal VOC 2012 val** (output, groundtruth, image):
 <p align="center"><img src="files/images/2007_000129.jpg.png" width="200"> <img src="files/images/2007_000129.png" width="200"> <img src="files/images/2007_000129.jpg" width="200"></p>
 <p align="center"><img src="files/images/2007_001299.jpg.png" width="200"> <img src="files/images/2007_001299.png" width="200"> <img src="files/images/2007_001299.jpg" width="200"></p>
 <p align="center"><img src="files/images/2007_005173.jpg.png" width="200"> <img src="files/images/2007_005173.png" width="200"> <img src="files/images/2007_005173.jpg" width="200"></p>
@@ -90,6 +102,6 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 <p align="center"><img src="files/images/2011_002713.jpg.png" width="200"> <img src="files/images/2011_002713.png" width="200"> <img src="files/images/2011_002713.jpg" width="200"></p>
 
 ### References
-* DeepLabv3: Rethinking Atrous Convolution for Semantic Image Segmentation, Chen *et al.*, arXiv: 1706.05587, 2017
-* DeepLabv3+: Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation, Checn *et al.*, arXiv: 1802.02611, 2018
-* DeepLabv3 official tensorflow implementation: https://github.com/tensorflow/models/tree/master/research/deeplab
+* **DeepLabv3**: Rethinking Atrous Convolution for Semantic Image Segmentation, Chen *et al.*, arXiv: 1706.05587, 2017
+* **DeepLabv3+**: Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation, Checn *et al.*, arXiv: 1802.02611, 2018
+* **DeepLabv3 official tensorflow implementation**: https://github.com/tensorflow/models/tree/master/research/deeplab
