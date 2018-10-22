@@ -7,6 +7,8 @@ import utils
 
 slim = tf.contrib.slim
 
+_BATCH_NORM_VARNAMES = 'beta', 'gamma', 'moving_mean' 'moving_variance',
+
 
 class BaseModelRunner(object):
   """Base model runner to be subclassed by Trainer, Evaluator, Inferencer."""
@@ -84,7 +86,8 @@ class DeepLabV3Trainer(BaseModelRunner):
     global_step = tf.train.get_or_create_global_step()
 
     with tf.device('/device:GPU:0'):
-      grads_and_vars = optimizer.compute_gradients(total_loss)
+      grads_and_vars = optimizer.compute_gradients(
+          total_loss, var_list=self._get_vars_to_train())
 
     with tf.device('/device:CPU:0'):
       grad_update_op = optimizer.apply_gradients(
@@ -106,6 +109,16 @@ class DeepLabV3Trainer(BaseModelRunner):
                       'summary_op': summary_op}
     return to_be_run_dict
 
+  def _get_vars_to_train(self):
+    """Returns the list of variables to be trained.
+ 
+    When fine_tune_batch_norm is disabled, do not train batch norm variables.
+    """
+    if self._prediction_model._fine_tune_batch_norm:
+      return tf.trainable_variables()
+    else:
+      return [v for v in tf.trainable_variables() if 
+          all(map(lambda n: n not in v.name, _BATCH_NORM_VARNAMES))]
 
 class DeepLabV3Evaluator(BaseModelRunner):
   """DeepLabV3 model evaluator."""
