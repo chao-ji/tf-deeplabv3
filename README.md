@@ -45,7 +45,7 @@ To perform **training**, run
     --load_ckpt_path=/PATH/TO/CLASSIFICATION_MODEL.ckpt \
     --output_path=/OUTPUT/PATH
 ```
-`filenames` points to an input TFRecord file. You may use the `--filenames` flags as many times as the number of TFRecord files. `--load_ckpt_path` points to the checkpoint file of a pre-trained classification model. Run `python run_trainer.py --help` for a complete list of flags with help info.
+`filenames` points to an input TFRecord file. You may use the `--filenames` flags as many times as the number of TFRecord files you have. `--load_ckpt_path` points to the checkpoint file of a pre-trained classification model. Run `python run_trainer.py --help` for a complete list of flags with help info.
 
 The trained weights are saved to checkpoint file under directory specified by `--output_path` (Default is `/tmp/deeplabv3`).
 
@@ -58,7 +58,7 @@ To perform **evaluation**, run
     --ckpt_path=/PATH/TO/DEEPLABV3_MODEL.ckpt
 ```
 The mean Intersection-Over-Union will be reported.
-`--ckpt_path` points to the checkpoint file of a trained DeepLabv3 file.
+`--ckpt_path` points to the checkpoint file of a trained DeepLabv3 model.
 
 To make **inferences**, run
 ```
@@ -82,24 +82,28 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 ##### Semantic Segmentation on PASCAL VOC 2012
 The DeepLabv3 model was trained on the [augmented training set](http://home.bharathh.info/pubs/codes/SBD/download.html) (1464 + 9118), and evaluated on the val split of VOC 2012 (1449) in terms of mean IOU:
 
-|feature extractor|output stride|atrou rates in ASPP|decoder module|mIOU|
-|-|-|-|-|-|
-|resnet_v2_101|16|6, 12, 18|None|0.7539|
-|mobilenet_v2|16|None|None|0.7099|
+|feature extractor|training output stride|test output stride|crop size|atrous rates in ASPP|decoder module|mIOU|
+|-|-|-|-|-|-|-|
+|resnet_v2_101|16|16|465|6, 12, 18|Yes|0.7608|
+|mobilenet_v2|16|16|513|None|None|0.7099|
 
 Note:
 * The reuslts are single-scale, without using multi-grid (See DeepLabv3 paper) and postprocessing.
-* ResNet v2 101: Because of memory constraint, a low training batch size (11) was used. You may get better results if you can afford to use a larger batch size on your device.
+* ResNet v2 101: Because of memory constraint, a small training batch size (12) and crop size (465) was used. You may get better results if you can afford to use a larger batch size and full crop size (513) on your device.
 
 **Sample input and output of Pascal VOC 2012 val** (output, groundtruth, image):
 <p align="center"><img src="files/images/2007_000129.jpg.png" width="200"> <img src="files/images/2007_000129.png" width="200"> <img src="files/images/2007_000129.jpg" width="200"></p>
+<p align="center"><img src="files/images/2007_001239.jpg.png" width="200"> <img src="files/images/2007_001239.png" width="200"> <img src="files/images/2007_001239.jpg" width="200"></p>
 <p align="center"><img src="files/images/2007_001299.jpg.png" width="200"> <img src="files/images/2007_001299.png" width="200"> <img src="files/images/2007_001299.jpg" width="200"></p>
-<p align="center"><img src="files/images/2007_005173.jpg.png" width="200"> <img src="files/images/2007_005173.png" width="200"> <img src="files/images/2007_005173.jpg" width="200"></p>
+<p align="center"><img src="files/images/2007_005331.jpg.png" width="200"> <img src="files/images/2007_005331.png" width="200"> <img src="files/images/2007_005331.jpg" width="200"></p>
+<p align="center"><img src="files/images/2007_009691.jpg.png" width="200"> <img src="files/images/2007_009691.png" width="200"> <img src="files/images/2007_009691.jpg" width="200"></p>
 <p align="center"><img src="files/images/2008_003546.jpg.png" width="200"> <img src="files/images/2008_003546.png" width="200"> <img src="files/images/2008_003546.jpg" width="200"></p>
 <p align="center"><img src="files/images/2008_004654.jpg.png" width="200"> <img src="files/images/2008_004654.png" width="200"> <img src="files/images/2008_004654.jpg" width="200"></p>
+<p align="center"><img src="files/images/2009_002753.jpg.png" width="200"> <img src="files/images/2009_002753.png" width="200"> <img src="files/images/2009_002753.jpg" width="200"></p>
 <p align="center"><img src="files/images/2009_003005.jpg.png" width="200"> <img src="files/images/2009_003005.png" width="200"> <img src="files/images/2009_003005.jpg" width="200"></p>
+<p align="center"><img src="files/images/2009_003666.jpg.png" width="200"> <img src="files/images/2009_003666.png" width="200"> <img src="files/images/2009_003666.jpg" width="200"></p>
 <p align="center"><img src="files/images/2010_000038.jpg.png" width="200"> <img src="files/images/2010_000038.png" width="200"> <img src="files/images/2010_000038.jpg" width="200"></p>
-<p align="center"><img src="files/images/2011_002713.jpg.png" width="200"> <img src="files/images/2011_002713.png" width="200"> <img src="files/images/2011_002713.jpg" width="200"></p>
+<p align="center"><img src="files/images/2010_003854.jpg.png" width="200"> <img src="files/images/2010_003854.png" width="200"> <img src="files/images/2010_003854.jpg" width="200"></p>
 
 ### References
 * **DeepLabv3**: Rethinking Atrous Convolution for Semantic Image Segmentation, Chen *et al.*, arXiv: 1706.05587, 2017
