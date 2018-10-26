@@ -79,7 +79,7 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 
 ### Experiments
 
-##### Semantic Segmentation on PASCAL VOC 2012
+#### Semantic Segmentation on PASCAL VOC2012 val split
 The DeepLabv3 model was trained on the [augmented training set](http://home.bharathh.info/pubs/codes/SBD/download.html) (1464 + 9118), and evaluated on the val split of VOC 2012 (1449) in terms of mean IOU:
 
 |feature extractor|training output stride|test output stride|crop size|atrous rates in ASPP|decoder module|mIOU|
@@ -92,18 +92,36 @@ Note:
 * ResNet v2 101: Because of memory constraint, a small training batch size (12) and crop size (465) was used. You may get better results if you can afford to use a larger batch size and full crop size (513) on your device.
 
 **Sample input and output of Pascal VOC 2012 val** (output, groundtruth, image):
-<p align="center"><img src="files/images/2007_000129.jpg.png" width="200"> <img src="files/images/2007_000129.png" width="200"> <img src="files/images/2007_000129.jpg" width="200"></p>
-<p align="center"><img src="files/images/2007_001239.jpg.png" width="200"> <img src="files/images/2007_001239.png" width="200"> <img src="files/images/2007_001239.jpg" width="200"></p>
-<p align="center"><img src="files/images/2007_001299.jpg.png" width="200"> <img src="files/images/2007_001299.png" width="200"> <img src="files/images/2007_001299.jpg" width="200"></p>
-<p align="center"><img src="files/images/2007_005331.jpg.png" width="200"> <img src="files/images/2007_005331.png" width="200"> <img src="files/images/2007_005331.jpg" width="200"></p>
-<p align="center"><img src="files/images/2007_009691.jpg.png" width="200"> <img src="files/images/2007_009691.png" width="200"> <img src="files/images/2007_009691.jpg" width="200"></p>
-<p align="center"><img src="files/images/2008_003546.jpg.png" width="200"> <img src="files/images/2008_003546.png" width="200"> <img src="files/images/2008_003546.jpg" width="200"></p>
-<p align="center"><img src="files/images/2008_004654.jpg.png" width="200"> <img src="files/images/2008_004654.png" width="200"> <img src="files/images/2008_004654.jpg" width="200"></p>
-<p align="center"><img src="files/images/2009_002753.jpg.png" width="200"> <img src="files/images/2009_002753.png" width="200"> <img src="files/images/2009_002753.jpg" width="200"></p>
-<p align="center"><img src="files/images/2009_003005.jpg.png" width="200"> <img src="files/images/2009_003005.png" width="200"> <img src="files/images/2009_003005.jpg" width="200"></p>
-<p align="center"><img src="files/images/2009_003666.jpg.png" width="200"> <img src="files/images/2009_003666.png" width="200"> <img src="files/images/2009_003666.jpg" width="200"></p>
-<p align="center"><img src="files/images/2010_000038.jpg.png" width="200"> <img src="files/images/2010_000038.png" width="200"> <img src="files/images/2010_000038.jpg" width="200"></p>
-<p align="center"><img src="files/images/2010_003854.jpg.png" width="200"> <img src="files/images/2010_003854.png" width="200"> <img src="files/images/2010_003854.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2007_000129.jpg.png" width="200"> <img src="files/images/val/2007_000129.png" width="200"> <img src="files/images/val/2007_000129.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2007_001239.jpg.png" width="200"> <img src="files/images/val/2007_001239.png" width="200"> <img src="files/images/val/2007_001239.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2007_001299.jpg.png" width="200"> <img src="files/images/val/2007_001299.png" width="200"> <img src="files/images/val/2007_001299.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2007_005331.jpg.png" width="200"> <img src="files/images/val/2007_005331.png" width="200"> <img src="files/images/val/2007_005331.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2007_009691.jpg.png" width="200"> <img src="files/images/val/2007_009691.png" width="200"> <img src="files/images/val/2007_009691.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2008_003546.jpg.png" width="200"> <img src="files/images/val/2008_003546.png" width="200"> <img src="files/images/val/2008_003546.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2008_004654.jpg.png" width="200"> <img src="files/images/val/2008_004654.png" width="200"> <img src="files/images/val/2008_004654.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2009_002753.jpg.png" width="200"> <img src="files/images/val/2009_002753.png" width="200"> <img src="files/images/val/2009_002753.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2009_003005.jpg.png" width="200"> <img src="files/images/val/2009_003005.png" width="200"> <img src="files/images/val/2009_003005.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2009_003666.jpg.png" width="200"> <img src="files/images/val/2009_003666.png" width="200"> <img src="files/images/val/2009_003666.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2010_000038.jpg.png" width="200"> <img src="files/images/val/2010_000038.png" width="200"> <img src="files/images/val/2010_000038.jpg" width="200"></p>
+<p align="center"><img src="files/images/val/2010_003854.jpg.png" width="200"> <img src="files/images/val/2010_003854.png" width="200"> <img src="files/images/val/2010_003854.jpg" width="200"></p>
+
+#### Fine tune on trainval split
+The deeplabv3 model trained on the agumented training set is then fine-tuned on the VOC2012 train-val split using a smaller initial learning rate (`1e-4`), where `--fine_tune_batch_norm` is set to `False` (i.e. batch norm parameters are only read from the checkpoint and not updated), and `--output_stride` set to 8 (with atrous rates doubled). 
+
+Below are sample predictions.   
+
+**VOC2012 test split and some non-VOC images:** (train-aug output stride 8, train-val output stride 16, image)
+<p align="center"><img src="files/images/test/os8/2008_000175.jpg.png" width="200"> <img src="files/images/test/os16/2008_000175.jpg.png" width="200"> <img src="files/images/test/image/2008_000175.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/2008_000404.jpg.png" width="200"> <img src="files/images/test/os16/2008_000404.jpg.png" width="200"> <img src="files/images/test/image/2008_000404.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/2008_003299.jpg.png" width="200"> <img src="files/images/test/os16/2008_003299.jpg.png" width="200"> <img src="files/images/test/image/2008_003299.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/2008_004638.jpg.png" width="200"> <img src="files/images/test/os16/2008_004638.jpg.png" width="200"> <img src="files/images/test/image/2008_004638.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/2009_001109.jpg.png" width="200"> <img src="files/images/test/os16/2009_001109.jpg.png" width="200"> <img src="files/images/test/image/2009_001109.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/2010_004776.jpg.png" width="200"> <img src="files/images/test/os16/2010_004776.jpg.png" width="200"> <img src="files/images/test/image/2010_004776.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/image1.jpg.png" width="200"> <img src="files/images/test/os16/image1.jpg.png" width="200"> <img src="files/images/test/image/image1.jpg" width="200"></p>
+<p align="center"><img src="files/images/test/os8/image2.jpg.png" width="200"> <img src="files/images/test/os16/image2.jpg.png" width="200"> <img src="files/images/test/image/image2.jpg" width="200"></p>
+
+We can see that the model fine-tuned on the train-val set with output stride 8 captures more subtle curvatures along object boundaries, and the improvment on certain objects like bikes, which have more fine-detained structures, is even more noticeable.
+
 
 ### References
 * **DeepLabv3**: Rethinking Atrous Convolution for Semantic Image Segmentation, Chen *et al.*, arXiv: 1706.05587, 2017
