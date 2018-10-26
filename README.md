@@ -110,7 +110,7 @@ The deeplabv3 model trained on the agumented training set is then fine-tuned on 
 
 Below are sample predictions.   
 
-**VOC2012 test split and some non-VOC images:** (train-aug output stride 8, train-val output stride 16, image)
+**VOC2012 test split and some non-VOC images:** (train-val output stride 8, train-aug output stride 16, image)
 <p align="center"><img src="files/images/test/os8/2008_000175.jpg.png" width="200"> <img src="files/images/test/os16/2008_000175.jpg.png" width="200"> <img src="files/images/test/image/2008_000175.jpg" width="200"></p>
 <p align="center"><img src="files/images/test/os8/2008_000404.jpg.png" width="200"> <img src="files/images/test/os16/2008_000404.jpg.png" width="200"> <img src="files/images/test/image/2008_000404.jpg" width="200"></p>
 <p align="center"><img src="files/images/test/os8/2008_003299.jpg.png" width="200"> <img src="files/images/test/os16/2008_003299.jpg.png" width="200"> <img src="files/images/test/image/2008_003299.jpg" width="200"></p>
@@ -120,7 +120,7 @@ Below are sample predictions.
 <p align="center"><img src="files/images/test/os8/image1.jpg.png" width="200"> <img src="files/images/test/os16/image1.jpg.png" width="200"> <img src="files/images/test/image/image1.jpg" width="200"></p>
 <p align="center"><img src="files/images/test/os8/image2.jpg.png" width="200"> <img src="files/images/test/os16/image2.jpg.png" width="200"> <img src="files/images/test/image/image2.jpg" width="200"></p>
 
-We can see that the model fine-tuned on the train-val set with output stride 8 captures more subtle curvatures along object boundaries, and the improvment on certain objects like bikes, which have more fine-detained structures, is even more noticeable.
+We can see that the model fine-tuned on the train-val set with output stride 8 captures more subtle curvatures along object boundaries, and the improvment on certain objects like bikes, which have more fine-detailed structures, is even more noticeable.
 
 
 ### References
