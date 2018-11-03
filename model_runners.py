@@ -65,7 +65,8 @@ class DeepLabV3Trainer(BaseModelRunner):
         { 'grouped_update_op': gradient update ops and batch_norm update ops,
           'total_loss': sum of prediction loss and regularization loss,
             float scalar tensor,
-          'global_step' global step, int scalar tensor }
+          'global_step': global step, int scalar tensor,
+          'summary_op': string scalar tensor, serialized summary message.}
     """
     self.check_dataset_mode(dataset)
 
@@ -77,13 +78,15 @@ class DeepLabV3Trainer(BaseModelRunner):
       with tf.device('/device:GPU:0'):
         logits = self._prediction_model.predict(tensor_dict['images'])
 
-    utils.add_loss(tensor_dict['labels'], logits, self._ignore_label)
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    pred_loss = tf.get_collection(tf.GraphKeys.LOSSES)
-    reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    total_loss = tf.add_n(pred_loss + reg_losses)
+    with tf.device('/device:CPU:0'):
+      utils.add_loss(tensor_dict['labels'], logits, self._ignore_label)
+      update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+      pred_loss = tf.get_collection(tf.GraphKeys.LOSSES)
+      reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
 
-    global_step = tf.train.get_or_create_global_step()
+      total_loss = tf.add_n(pred_loss + reg_losses)
+
+      global_step = tf.train.get_or_create_global_step()
 
     with tf.device('/device:GPU:0'):
       grads_and_vars = optimizer.compute_gradients(
@@ -93,19 +96,20 @@ class DeepLabV3Trainer(BaseModelRunner):
       grad_update_op = optimizer.apply_gradients(
           grads_and_vars, global_step=global_step)
 
-    update_ops.append(grad_update_op)
+      update_ops.append(grad_update_op)
 
-    grouped_update_op = tf.group(*update_ops, name='update_barrier')
+      grouped_update_op = tf.group(*update_ops, name='update_barrier')
     with tf.control_dependencies([grouped_update_op]):
-      total_loss = tf.identity(total_loss, name='total_loss')
+      with tf.device('/device:CPU:0'):
+        total_loss = tf.identity(total_loss, name='total_loss')
 
-    summary_op = tf.summary.merge([
-        tf.summary.scalar('total_loss', total_loss),
-        tf.summary.scalar('learning_rate', learning_rate)])
+        summary_op = tf.summary.merge([
+            tf.summary.scalar('total_loss', total_loss),
+            tf.summary.scalar('learning_rate', learning_rate)])
 
     to_be_run_dict = {'grouped_update_op': grouped_update_op, 
                       'total_loss': total_loss, 
-                      'global_step': global_step,
+                      'global_step': global_step,                      
                       'summary_op': summary_op}
     return to_be_run_dict
 
@@ -150,9 +154,9 @@ class DeepLabV3Evaluator(BaseModelRunner):
       to_be_run_dict: a dict mapping from names to tensors/ops 
         { 'total_loss': sum of prediction loss and regularization loss,
             float scalar tensor,
-          'mIOU': mean IOU, float scalar tensor,
-          'predictions': predicted labels, int tensor of shape 
-            [batch_size, height, width]}
+          'mean_iou': mean IOU, float scalar tensor,
+          'miou_update_op': tf.Operation to update the confusion matrix 
+        }
     """
     self.check_dataset_mode(dataset)
 
@@ -165,11 +169,13 @@ class DeepLabV3Evaluator(BaseModelRunner):
     total_loss = tf.add_n(pred_loss + reg_losses)
 
     predictions = tf.argmax(logits, axis=3, output_type=tf.int64)
-    mIOU = utils.compute_mIOU(tensor_dict['labels'], predictions, 
+
+    mean_iou, update_op = utils.compute_mIOU(tensor_dict['labels'], predictions,
         self._ignore_label, self._num_classes)
 
     to_be_run_dict = {'total_loss': total_loss, 
-        'mIOU': mIOU, 'predictions': predictions}
+                      'mean_iou': mean_iou, 
+                      'miou_update_op': update_op}
     return to_be_run_dict
 
 
@@ -209,4 +215,3 @@ class DeepLabV3Inferencer(BaseModelRunner):
     to_be_run_dict = {'predictions': predictions, 
                       'filename': tensor_dict['filename']}
     return to_be_run_dict
-

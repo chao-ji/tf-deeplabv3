@@ -91,25 +91,26 @@ def main(_):
 
   to_be_run_dict = evaluator.evaluate(filenames=FLAGS.filenames,
                                       dataset=dataset)
+  miou = to_be_run_dict.pop('mean_iou')
 
   restore_saver = utils.create_restore_saver()
 
   with tf.Session() as sess:
     restore_saver.restore(sess, FLAGS.ckpt_path)
+    sess.run(tf.local_variables_initializer())
 
-    mIOUs = []
     losses = []
     while True:
       try:
         result_dict = sess.run(to_be_run_dict)
         losses.append(result_dict['total_loss'])
-        mIOUs.append(result_dict['mIOU'])
+
       except tf.errors.OutOfRangeError:
         break
 
     print('Num of images evaluated:', len(losses))
     print('Loss:', np.mean(losses))
-    print('mIOU:', np.mean(mIOUs))
+    print('mIOU:', sess.run(miou))
 
 
 if __name__ == '__main__':

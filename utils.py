@@ -269,7 +269,8 @@ def compute_mIOU(labels, predictions, ignore_label, num_classes):
     num_classes: int scalar, num of classes.
 
   Returns:
-    mIOU: float scalar tensor holding computed mIOU.
+    mean_iou: float scalar tensor holding computed mIOU.
+    update_op: tf.Operation to update the confusion matrix 
   """
   masks = tf.to_float(tf.not_equal(labels, ignore_label))
   labels = tf.to_int32(tf.to_float(labels) * masks)
@@ -278,20 +279,9 @@ def compute_mIOU(labels, predictions, ignore_label, num_classes):
   predictions = tf.reshape(predictions, [-1])
   masks = tf.reshape(masks, [-1])
 
-  cmat = tf.confusion_matrix(labels, predictions, num_classes, weights=masks)
-  axis0_sum = tf.reduce_sum(cmat, axis=0)
-  axis1_sum = tf.reduce_sum(cmat, axis=1)
-
-  intersection = tf.diag_part(cmat)
-  union = axis0_sum + axis1_sum - intersection
-
-  num_valid_cls = tf.reduce_sum(tf.to_float(tf.not_equal(union, 0)))
-  union = tf.where(tf.greater(union, 0), union, tf.ones_like(union))
-  iou = tf.div(tf.to_float(intersection), tf.to_float(union))
-
-  return tf.where(tf.greater(num_valid_cls, 0),
-      tf.div(tf.reduce_sum(iou), num_valid_cls), 0)
-
+  mean_iou, update_op = tf.metrics.mean_iou(
+      labels, predictions, num_classes, weights=masks)
+  return mean_iou, update_op
 
 def resnet_arg_scope(weight_decay=0.0001,
                      batch_norm_decay=0.997,
