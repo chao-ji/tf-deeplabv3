@@ -106,7 +106,8 @@ Note:
 <p align="center"><img src="files/images/val/2010_003854.jpg.png" width="200"> <img src="files/images/val/2010_003854.png" width="200"> <img src="files/images/val/2010_003854.jpg" width="200"></p>
 
 #### Fine tune on trainval split
-The deeplabv3 model trained on the agumented training set is then fine-tuned on the VOC2012 train-val split using a smaller initial learning rate (`1e-4`), where `--fine_tune_batch_norm` is set to `False` (i.e. batch norm parameters are only read from the checkpoint and not updated), and `--output_stride` set to 8 (with atrous rates doubled). 
+The deeplabv3 model trained on the agumented training set is then fine-tuned on the VOC2012 train-val split using a smaller initial learning rate (`1e-4`), where `--fine_tune_batch_norm` is set to `False` and `--output_stride` set to 8 (with atrous rates doubled). In the case, you don't have to use a large batch size that is otherwise needed to ensure the accuracy of the estimation of mean and variance over a minibatch. Those statistics are just read from the checkpoint and used to compute the normalization during forward pass.
+
 
 Below are sample predictions.   
 
