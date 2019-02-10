@@ -23,6 +23,8 @@ flags = tf.app.flags
 
 
 flags.DEFINE_integer('batch_size', 12, 'Batch size.')
+flags.DEFINE_bool('restore_from_seg_model', False, 'Whether to restore from a '
+    'segmentation model (T) or classification model (F). Default is False.')
 flags.DEFINE_bool('pad_imagenet_mean', False, 'Whether to pad the training ' 
     'images with image net mean (True) or [127.5, 127.5, 127.5] (False).')
 flags.DEFINE_float('min_rescale_factor', 0.5, 'Lower bound of the factor by '
@@ -73,6 +75,14 @@ flags.DEFINE_integer('persist_per_steps', 1000,
     'Every `persist_per_steps` to persist model variables.')
 flags.DEFINE_string('output_path', '/tmp/deeplabv3', 
     'Path to checkpoint files and summaries are saved.')
+flags.DEFINE_multi_integer('boundaries', [60000, 80000], 'A list of increasing'
+    ' ints starting from a positive int, the steps at which learning rate is '
+    'changed.')
+flags.DEFINE_multi_float('rates', [7e-4, 7e-5], 'A list of floats of '
+    'length `len(FLAGS.boundaries)`, the new learning rates at boundaries '
+    'defined in `FLAGS.boundaries`.')
+flags.DEFINE_bool('man_step_lr', False, 'Whether to use manual stepping (T) or '
+    'polynomial decay learning rate (F). Defaults to False.')
 
 FLAGS = flags.FLAGS
 
@@ -117,18 +127,26 @@ def main(_):
 
   trainer = DeepLabV3Trainer(model, ignore_label=FLAGS.ignore_label)
 
-  optimizer, learning_rate = utils.build_optimizer(
-      init_learning_rate=FLAGS.init_learning_rate, 
-      num_steps=FLAGS.num_steps, 
-      learning_power=FLAGS.learning_power, 
-      momentum=FLAGS.momentum)
+
+  if FLAGS.man_step_lr:
+    learning_rate = utils.build_manual_step_lr(
+        FLAGS.init_learning_rate, list(FLAGS.boundaries), list(FLAGS.rates))
+  else:
+    learning_rate = utils.build_poly_decay_lr(
+        FLAGS.init_learning_rate, FLAGS.num_steps, FLAGS.learning_power)
+
+  optimizer = utils.build_optimizer(learning_rate, momentum=FLAGS.momentum) 
 
   to_be_run_dict = trainer.train(filenames=FLAGS.filenames,
                                  dataset=dataset, 
                                  optimizer=optimizer,
                                  learning_rate=learning_rate)
 
-  restore_saver = utils.create_restore_saver(FLAGS.load_ckpt_path)
+  if FLAGS.restore_from_seg_model:
+    restore_saver = utils.create_restore_saver()
+  else:
+    restore_saver = utils.create_restore_saver(FLAGS.load_ckpt_path)
+
   persist_saver = utils.create_persist_saver()
   initializers = tf.global_variables_initializer()
 
@@ -139,18 +157,22 @@ def main(_):
     restore_saver.restore(sess, FLAGS.load_ckpt_path)
 
     losses = []
-    for i in range(FLAGS.num_steps):
+    while True:
       result_dict = sess.run(to_be_run_dict)
-      losses.append(result_dict['total_loss'])
-      summary_writer.add_summary(result_dict['summary_op'], i)
+      gs = result_dict['global_step']
+      if gs > FLAGS.num_steps:
+        break
 
-      if i % FLAGS.log_per_steps == 0:
-        print('step: %d, loss: %f' % (i, np.mean(losses)))
+      losses.append(result_dict['total_loss'])
+      summary_writer.add_summary(result_dict['summary_op'], gs)
+
+      if gs % FLAGS.log_per_steps == 0:
+        print('step: %d, loss: %f' % (gs, np.mean(losses)))
         losses = []
         sys.stdout.flush()
-      if i % FLAGS.persist_per_steps == 0:
+      if gs % FLAGS.persist_per_steps == 0:
         persist_saver.save(
-            sess, os.path.join(FLAGS.output_path, 'model.ckpt'), global_step=i)
+            sess, os.path.join(FLAGS.output_path, 'model.ckpt'), global_step=gs)
 
     persist_saver.save(sess, os.path.join(FLAGS.output_path, 'model.ckpt'))
   summary_writer.close()

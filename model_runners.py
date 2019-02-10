@@ -76,7 +76,7 @@ class DeepLabV3Trainer(BaseModelRunner):
       with tf.device('/device:GPU:0'):
         logits = self._prediction_model.predict(tensor_dict['images'])
 
-    with tf.device('/device:CPU:0'):
+    with tf.device('/device:GPU:0'):
       utils.add_loss(tensor_dict['labels'], logits, self._ignore_label)
       update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
       pred_loss = tf.get_collection(tf.GraphKeys.LOSSES)
@@ -97,12 +97,12 @@ class DeepLabV3Trainer(BaseModelRunner):
 
       grouped_update_op = tf.group(*update_ops, name='update_barrier')
     with tf.control_dependencies([grouped_update_op]):
-      with tf.device('/device:CPU:0'):
-        total_loss = tf.identity(total_loss, name='total_loss')
+#      with tf.device('/device:GPU:0'):
+      total_loss = tf.identity(total_loss, name='total_loss')
 
-        summary_op = tf.summary.merge([
-            tf.summary.scalar('total_loss', total_loss),
-            tf.summary.scalar('learning_rate', learning_rate)])
+      summary_op = tf.summary.merge([
+          tf.summary.scalar('total_loss', total_loss),
+          tf.summary.scalar('learning_rate', learning_rate)])
 
     to_be_run_dict = {'grouped_update_op': grouped_update_op, 
                       'total_loss': total_loss, 

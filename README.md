@@ -80,6 +80,8 @@ DeepLabv3 has a very large memory footprint at the time of training, mainly beca
 ### Experiments
 
 #### Semantic Segmentation on PASCAL VOC2012 val split
+Color map: [pascalvoc_colormap.pdf](files/pascalvoc_colormap.pdf)
+
 The DeepLabv3 model was trained on the [augmented training set](http://home.bharathh.info/pubs/codes/SBD/download.html) (1464 + 9118), and evaluated on the val split of VOC 2012 (1449) in terms of mean IOU:
 
 |feature extractor|training output stride|test output stride|crop size|atrous rates in ASPP|decoder module|mIOU|
@@ -122,6 +124,36 @@ Below are sample predictions.
 <p align="center"><img src="files/images/test/os8/image2.jpg.png" width="200"> <img src="files/images/test/os16/image2.jpg.png" width="200"> <img src="files/images/test/image/image2.jpg" width="200"></p>
 
 We can see that the model fine-tuned on the train-val set with output stride 8 captures more subtle curvatures along object boundaries, and the improvment on certain objects like bikes, which have more fine-detailed structures, is even more noticeable.
+
+#### Semantic Segmentation on ADE20K val split
+Color map: [ade20k_colormap.pdf](files/ade20k_colormap.pdf)
+
+
+The DeepLabv3 model was trained on the train split (20206), and evaluated on the val split (2000) in terms of mean IOU:
+
+|feature extractor|training output stride|test output stride|crop size|atrous rates in ASPP|decoder module|mIOU|
+|-|-|-|-|-|-|-|
+|resnet_v2_101|16|8|433|5, 10, 15|Yes|0.3711|
+
+Sample prediction:
+
+<p align="center"><img src="files/images/ade20k/palm_seg.png" width="600"> <img src="files/images/ade20k/palm.jpg" width="600"></p>
+
+### Updates
+---
+#### Feb 10, 2019
+1. The weights can now be restored from a segmentation checkpoint by specifying `--restore_from_seg_model=True`.
+2. Added manual stepping for learning rate schedule. For example
+```bash
+python run_trainer.py \
+--boundaries=60000 \
+--boundaries=80000 \
+--init_learning_rate=7e-3 \
+--rates=7e-4 \
+--rates=7e-5
+```  
+The learning rate is decayed to `7e-4` and `7e-5` at step 60000 and 80000 respectively.
+
 
 
 ### References

@@ -184,18 +184,29 @@ def get_decoder_end_point_name(model_variant):
   raise ValueError('Unsupported model variant %s' % model_variant)
 
 
-def build_optimizer(
-    init_learning_rate, num_steps, learning_power=0.9, momentum=0.9):
+def build_optimizer(learning_rate, momentum=0.9):
   """Builds the optimizer and the learning rate.
+
+  Args:
+    learning_rate: int scalar tensor, learning rate.
+    momentum: float scalar, momentum of MomentumOptimizer.
+
+  Returns:
+    optimizer: an Optimizer instance.
+  """
+  optimizer = tf.train.MomentumOptimizer(learning_rate, momentum)
+  return optimizer
+
+
+def build_poly_decay_lr(init_learning_rate, num_steps, learning_power=0.9):
+  """Build polynomially decayed learning rate.
 
   Args:
     init_learning_rate: float scalar, initial learning rate.
     num_steps: int scalar, total num of steps (mini-batches)
     learning_power: float scalar, power of the polynomial decay.
-    momentum: float scalar, momentum of MomentumOptimizer.
 
   Returns:
-    optimizer: an Optimizer instance.
     learning_rate: int scalar tensor, learning rate.
   """
   global_step = tf.train.get_or_create_global_step()
@@ -205,9 +216,55 @@ def build_optimizer(
       num_steps,
       end_learning_rate=0,
       power=learning_power)
+  return learning_rate
 
-  optimizer = tf.train.MomentumOptimizer(learning_rate, momentum)
-  return optimizer, learning_rate
+
+def build_manual_step_lr(init_learning_rate, boundaries, rates, warmup=False):
+  """Generates manually stepped learning rate schedule.
+
+  Example:
+  Given init_learning_rate = 0.1, boundaries = [10, 20], and rates [.01, .001], 
+  the learning rate is returned as a scalar tensor, which equals
+    .1 for global steps in interval [0, 10);
+    .01 for global steps in interval [10, 20);
+    .001 for global steps in interval [20, inf).
+  If `warmup` is True, then the learning rate is linearly interpolated between
+  .1 and .01 for global_steps in interval [0, 10).
+
+  Note `boundaries` must be an increasing list of ints starting from a positive 
+  integer, and has length `len(rates) - 1`. 
+
+  Args:
+    init_learning_rate: float scalar, initial learning rate.
+    boundaries: a list of increasing ints starting from a positive int, the
+      steps at which learning rate is changed.
+    rates: a list of floats of length `len(boundaries) + 1`, the learning rates
+      in the intervals defined by the integers in `boundaries`.
+    warmup: bool scalar, whether to linearly interpolate learning rates from 
+      `rates[0]` to `rates[1]` for global steps within the interval 
+      `[0, boundaries[0])`.
+
+  Returns
+    learning_rate: float scalar tensor, the learning rate at global step 
+      `global_step`.
+  """
+  rates = [init_learning_rate] + rates
+  if len(rates) != len(boundaries) + 1:
+    raise ValueError('`len(rates)` must be equal to `len(boundaries) + 1`.')
+
+  if warmup:
+    slope = float(rates[1] - rates[0]) / boundaries[0]
+    warmup_steps = list(range(boundaries[0]))
+    warmup_rates = [rates[0] + slope * step for step in warmup_steps]
+    boundaries = warmup_steps[1:] + boundaries
+    rates = warmup_rates + rates[1:]
+
+  global_step = tf.train.get_or_create_global_step()
+  lower_cond = tf.concat([tf.less(global_step, boundaries), [True]], 0)
+  upper_cond = tf.concat([[True], tf.greater_equal(global_step, boundaries)], 0)
+  indicator = tf.to_float(tf.logical_and(lower_cond, upper_cond))
+  learning_rate = tf.reduce_sum(rates * indicator, name='learning_rate')
+  return learning_rate
 
 
 def get_vars_available_in_ckpt(variable_list, ckpt_path):
@@ -321,7 +378,8 @@ def create_restore_saver(load_ckpt_path=None):
   Returns:
     restore_saver: the restore saver.
   """
-  if load_ckpt_path is None:  # Evaluator or Inferencer
+  if load_ckpt_path is None:  # Evaluator or Inferencer or loading from 
+                              # a segmentation model checkpoint
     restore_saver = tf.train.Saver(tf.global_variables())
   else: # Trainer
     vars_available = get_vars_available_in_ckpt(
@@ -392,4 +450,4 @@ def get_color_map(num_colors=256, normalized=False):
 
   color_map = color_map/255 if normalized else color_map
   return color_map
- 
+
