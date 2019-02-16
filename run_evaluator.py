@@ -51,6 +51,8 @@ flags.DEFINE_string('ckpt_path', None,
 
 FLAGS = flags.FLAGS
 
+tf.logging.set_verbosity(tf.logging.INFO)
+
 
 def main(_):
   dataset = EvaluatorDeepLabV3Dataset()

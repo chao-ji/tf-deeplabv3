@@ -133,7 +133,7 @@ The DeepLabv3 model was trained on the train split (20206), and evaluated on the
 
 |feature extractor|training output stride|test output stride|crop size|atrous rates in ASPP|decoder module|mIOU|
 |-|-|-|-|-|-|-|
-|resnet_v2_101|16|8|433|5, 10, 15|Yes|0.3711|
+|resnet_v2_101|16|8|433|5, 10, 15|Yes|0.3914|
 
 Sample prediction:
 
